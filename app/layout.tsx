@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { ConvexClerkProvider } from "@/components/providers/ConvexClerkProvider";
 
 export const metadata: Metadata = {
   title: "Hebra",
@@ -9,7 +10,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <ConvexClerkProvider>{children}</ConvexClerkProvider>
+      </body>
     </html>
   );
 }
