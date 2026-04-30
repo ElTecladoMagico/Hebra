@@ -8,3 +8,4 @@ node_modules
 .vercel
 convex/_generated
 coverage
+next-env.d.ts
