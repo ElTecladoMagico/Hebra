@@ -25,7 +25,80 @@ export default defineSchema({
   campaigns: defineTable({
     userId: v.id("users"),
     name: v.string(),
-  }).index("by_user", ["userId"]),
+    offering: v.string(),
+    websiteUrl: v.optional(v.string()),
+    keywords: v.array(v.string()),
+    subredditSlugs: v.array(v.string()),
+    replySettings: v.object({
+      tone: v.union(v.literal("casual"), v.literal("professional"), v.literal("friendly")),
+      length: v.union(v.literal("short"), v.literal("medium"), v.literal("long")),
+      style: v.union(
+        v.literal("value-first"),
+        v.literal("value-mention"),
+        v.literal("direct-offer")
+      ),
+      includeCTA: v.boolean(),
+      personalize: v.boolean(),
+      includePhrases: v.optional(v.string()),
+      replyDialect: v.union(
+        v.literal("es-neutral"),
+        v.literal("es-ES"),
+        v.literal("es-LATAM")
+      ),
+    }),
+    status: v.union(v.literal("active"), v.literal("paused"), v.literal("archived")),
+    lastPolledAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_user_status", ["userId", "status"])
+    .index("by_status_lastPolled", ["status", "lastPolledAt"]),
+
+  redditPosts: defineTable({
+    redditId: v.string(),
+    subreddit: v.string(),
+    title: v.string(),
+    body: v.string(),
+    author: v.string(),
+    authorKarma: v.optional(v.number()),
+    url: v.string(),
+    permalink: v.string(),
+    postedAt: v.number(),
+    fetchedAt: v.number(),
+    detectedDialect: v.optional(
+      v.union(v.literal("es-neutral"), v.literal("es-ES"), v.literal("es-LATAM"))
+    ),
+    language: v.string(),
+  })
+    .index("by_redditId", ["redditId"])
+    .index("by_subreddit_posted", ["subreddit", "postedAt"]),
+
+  leads: defineTable({
+    userId: v.id("users"),
+    campaignId: v.id("campaigns"),
+    postId: v.id("redditPosts"),
+    matchedKeyword: v.string(),
+    score: v.number(),
+    tier: v.union(v.literal("hot"), v.literal("warm"), v.literal("cold")),
+    reasoning: v.string(),
+    read: v.boolean(),
+    archived: v.boolean(),
+    scoredAt: v.number(),
+  })
+    .index("by_user_tier", ["userId", "tier"])
+    .index("by_user_unread", ["userId", "read"])
+    .index("by_campaign_scored", ["campaignId", "scoredAt"])
+    .index("by_post_user", ["postId", "userId"]),
+
+  usageDaily: defineTable({
+    userId: v.id("users"),
+    dateKey: v.string(),
+    scoringCalls: v.number(),
+    replyGenerations: v.number(),
+    keywordGenerations: v.number(),
+    geminiCostCents: v.number(),
+  })
+    .index("by_user_date", ["userId", "dateKey"])
+    .index("by_date", ["dateKey"]),
 
   errorLog: defineTable({
     service: v.string(),
