@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 
 export const createOrUpdate = mutation({
   args: {
@@ -100,4 +100,9 @@ export const store = mutation({
       lastActiveAt: now,
     });
   },
+});
+
+export const getInternal = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => ctx.db.get(args.userId),
 });
