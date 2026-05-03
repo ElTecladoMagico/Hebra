@@ -1,15 +1,27 @@
 "use client";
-import { useQuery } from "convex/react";
+import { useEffect } from "react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 export default function DashboardPage() {
+  const { isAuthenticated } = useConvexAuth();
+  const storeUser = useMutation(api.users.store);
   const user = useQuery(api.users.current);
+
+  // Client-side user sync: guarantees a row exists in Convex regardless of
+  // webhook delivery state. Idempotent — safe to call on every mount.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    storeUser().catch((err) => {
+      console.error("[dashboard] failed to sync user to Convex:", err);
+    });
+  }, [isAuthenticated, storeUser]);
 
   if (user === undefined) {
     return <p>Cargando…</p>;
   }
   if (user === null) {
-    return <p>Sincronizando tu cuenta… (espera unos segundos y refresca)</p>;
+    return <p>Sincronizando tu cuenta…</p>;
   }
 
   return (
