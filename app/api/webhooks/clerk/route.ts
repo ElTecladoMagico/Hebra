@@ -30,8 +30,21 @@ export async function POST(req: Request) {
     return new Response("Invalid signature", { status: 401 });
   }
 
-  if (evt.type === "user.created" || evt.type === "user.updated") {
-    const { id, email_addresses, first_name, last_name } = evt.data;
+  // Extract the user object regardless of event type:
+  // - user.created / user.updated: user fields are at evt.data
+  // - session.created: user is nested at evt.data.user
+  // This makes the sync robust to event subscription drift and recovers
+  // pre-existing Clerk users on their next sign-in.
+  const userPayload =
+    evt.type === "user.created" || evt.type === "user.updated"
+      ? evt.data
+      : evt.type === "session.created"
+        ? evt.data?.user
+        : null;
+
+  if (userPayload) {
+    const { id, email_addresses, first_name, last_name } = userPayload;
+    if (!id) return new Response("No user id in payload", { status: 400 });
     const email = email_addresses?.[0]?.email_address;
     if (!email) return new Response("No email", { status: 400 });
     const name = [first_name, last_name].filter(Boolean).join(" ") || undefined;
