@@ -1,0 +1,8 @@
+{
+  "candidates": [{
+    "content": {
+      "parts": [{ "text": "{\"score\": 92, \"reasoning\": \"Pide explícitamente programador con presupuesto.\"}" }]
+    }
+  }],
+  "usageMetadata": { "promptTokenCount": 600, "candidatesTokenCount": 50 }
+}
