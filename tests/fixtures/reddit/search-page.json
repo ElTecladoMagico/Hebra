@@ -1,0 +1,22 @@
+{
+  "kind": "Listing",
+  "data": {
+    "after": null,
+    "children": [
+      {
+        "kind": "t3",
+        "data": {
+          "id": "abc123",
+          "subreddit": "españa",
+          "title": "Busco programador para web",
+          "selftext": "Hola, necesito ayuda con mi proyecto. Tío, ¿alguien puede recomendar?",
+          "author": "user_test",
+          "url": "https://reddit.com/r/españa/abc123",
+          "permalink": "/r/españa/comments/abc123/busco_programador/",
+          "created_utc": 1714485600,
+          "author_flair_text": null
+        }
+      }
+    ]
+  }
+}
