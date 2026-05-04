@@ -2,6 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body {
-  height: 100%;
+@layer base {
+  :root {
+    /* Liquid Glass tokens — neutral (Decisión B1). Brand-tinted variant deferred. */
+    --glass-bg: oklch(98% 0 0 / 0.55);
+    --glass-bg-strong: oklch(98% 0 0 / 0.72);
+    --glass-blur: 20px;
+    --glass-saturate: 170%;
+    --glass-rim-top: rgb(255 255 255 / 0.18);
+    --glass-rim-hairline: rgb(255 255 255 / 0.06);
+    --glass-shadow-near: rgb(0 0 0 / 0.04);
+    --glass-shadow-far: rgb(0 0 0 / 0.12);
+    --glass-radius: 1.25rem; /* 20px */
+
+    /* Surface tokens (opaque companions) */
+    --surface: oklch(99% 0 0);
+    --surface-muted: oklch(97% 0 0);
+    --surface-border: oklch(92% 0 0);
+
+    /* Tier semantic colors — used by Badge variants. Conservative chroma. */
+    --tier-hot: oklch(63% 0.18 25);
+    --tier-hot-bg: oklch(96% 0.04 25);
+    --tier-warm: oklch(72% 0.14 65);
+    --tier-warm-bg: oklch(96% 0.05 65);
+    --tier-cold: oklch(60% 0.02 250);
+    --tier-cold-bg: oklch(96% 0 0);
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    color: oklch(20% 0 0);
+    background:
+      radial-gradient(at 0% 0%, oklch(96% 0.01 250) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, oklch(97% 0.01 60) 0px, transparent 50%),
+      oklch(99% 0 0);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* Standard glass surface — chrome / modals / CTAs. */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    border-radius: var(--glass-radius);
+    box-shadow:
+      inset 0 1px 0 var(--glass-rim-top),
+      inset 0 0 0 1px var(--glass-rim-hairline),
+      0 1px 2px var(--glass-shadow-near),
+      0 12px 32px -8px var(--glass-shadow-far);
+    isolation: isolate;
+  }
+
+  .glass-strong {
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-radius: var(--glass-radius);
+    box-shadow:
+      inset 0 1px 0 var(--glass-rim-top),
+      inset 0 0 0 1px var(--glass-rim-hairline),
+      0 4px 12px var(--glass-shadow-near),
+      0 24px 64px -12px var(--glass-shadow-far);
+    isolation: isolate;
+  }
+
+  /* Solid companion surface — for forms, lead cards, dense data. */
+  .surface-card {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--glass-radius);
+    box-shadow: 0 1px 2px var(--glass-shadow-near);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-strong {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow:
+      0 0 0 1px var(--surface-border),
+      0 4px 16px -4px var(--glass-shadow-far);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
