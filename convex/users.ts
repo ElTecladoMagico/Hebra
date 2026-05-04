@@ -55,3 +55,13 @@ export const getInternal = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => ctx.db.get(args.userId),
 });
+
+export const getInternalByClerkId = internalQuery({
+  args: { clerkUserId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkUserId", args.clerkUserId))
+      .unique();
+  },
+});

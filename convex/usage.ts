@@ -65,6 +65,37 @@ export const incrementScoring = internalMutation({
   },
 });
 
+export const incrementReply = internalMutation({
+  args: {
+    userId: v.id("users"),
+    dateKey: v.string(),
+    costCents: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const row = await ctx.db
+      .query("usageDaily")
+      .withIndex("by_user_date", (q) =>
+        q.eq("userId", args.userId).eq("dateKey", args.dateKey)
+      )
+      .unique();
+    if (!row) {
+      await ctx.db.insert("usageDaily", {
+        userId: args.userId,
+        dateKey: args.dateKey,
+        scoringCalls: 0,
+        replyGenerations: 1,
+        keywordGenerations: 0,
+        geminiCostCents: args.costCents,
+      });
+    } else {
+      await ctx.db.patch(row._id, {
+        replyGenerations: row.replyGenerations + 1,
+        geminiCostCents: row.geminiCostCents + args.costCents,
+      });
+    }
+  },
+});
+
 export function utcDateKey(timestamp: number): string {
   const d = new Date(timestamp);
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;

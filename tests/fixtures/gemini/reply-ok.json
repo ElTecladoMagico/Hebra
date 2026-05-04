@@ -1,0 +1,8 @@
+{
+  "candidates": [{
+    "content": {
+      "parts": [{ "text": "Para tu caso específico, te recomendaría empezar con un MVP en Next.js. Si necesitas ayuda con la arquitectura, llevo 8 años haciendo exactamente este tipo de proyectos." }]
+    }
+  }],
+  "usageMetadata": { "promptTokenCount": 800, "candidatesTokenCount": 60 }
+}

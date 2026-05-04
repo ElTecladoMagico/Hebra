@@ -100,6 +100,22 @@ export default defineSchema({
     .index("by_user_date", ["userId", "dateKey"])
     .index("by_date", ["dateKey"]),
 
+  replies: defineTable({
+    leadId: v.id("leads"),
+    userId: v.id("users"),
+    draftText: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("copied"),
+      v.literal("dismissed")
+    ),
+    tweaks: v.array(v.string()),
+    generatedAt: v.number(),
+    copiedAt: v.optional(v.number()),
+  })
+    .index("by_lead", ["leadId"])
+    .index("by_user_status", ["userId", "status"]),
+
   errorLog: defineTable({
     service: v.string(),
     operation: v.string(),

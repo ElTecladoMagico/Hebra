@@ -1,10 +1,16 @@
 import { v } from "convex/values";
 import {
   internalMutation,
+  internalQuery,
   mutation,
   query,
 } from "./_generated/server";
 import { sortLeadsForFeed } from "./lib/leadOrdering";
+
+export const getInternal = internalQuery({
+  args: { leadId: v.id("leads") },
+  handler: async (ctx, args) => ctx.db.get(args.leadId),
+});
 
 export const insert = internalMutation({
   args: {
