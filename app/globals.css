@@ -4,15 +4,27 @@
 
 @layer base {
   :root {
-    /* Liquid Glass tokens — neutral (Decisión B1). Brand-tinted variant deferred. */
-    --glass-bg: oklch(98% 0 0 / 0.55);
-    --glass-bg-strong: oklch(98% 0 0 / 0.72);
-    --glass-blur: 20px;
-    --glass-saturate: 170%;
-    --glass-rim-top: rgb(255 255 255 / 0.18);
-    --glass-rim-hairline: rgb(255 255 255 / 0.06);
+    /* Liquid Glass tokens — neutral (Decisión B1). Brand-tinted variant deferred.
+     * v2 deepens Apple fidelity: stronger blur + saturation, two-tone rim
+     * (bright top, faint bottom) faking light from above, layered ambient
+     * shadow stack (close + medium + far), and a static specular sheen
+     * composed as a top-edge linear-gradient on top of the translucent base. */
+    --glass-bg: oklch(98% 0 0 / 0.5);
+    --glass-bg-strong: oklch(98% 0 0 / 0.68);
+    --glass-blur: 26px;
+    --glass-saturate: 180%;
+
+    /* Two-tone rim — Apple's chrome reads brighter at the top edge (faking
+     * a light source above) and gets a faint bottom edge for body. */
+    --glass-rim-top: rgb(255 255 255 / 0.55);
+    --glass-rim-bottom: rgb(255 255 255 / 0.08);
+    --glass-rim-hairline: rgb(255 255 255 / 0.1);
+
+    /* Multi-layer ambient shadow tokens. */
     --glass-shadow-near: rgb(0 0 0 / 0.04);
+    --glass-shadow-mid: rgb(0 0 0 / 0.06);
     --glass-shadow-far: rgb(0 0 0 / 0.12);
+
     --glass-radius: 1.25rem; /* 20px */
 
     /* Surface tokens (opaque companions) */
@@ -34,41 +46,71 @@
     height: 100%;
   }
 
+  /* Three-point radial backdrop. Glass needs material to refract over —
+   * Apple's chrome typically sits over more saturated content than a
+   * monochrome panel. Chroma bumped from 0.01 → 0.04 (still very pale,
+   * lightness 94–99%) and we add a third hue at the bottom-center for
+   * triangular depth instead of a left-right gradient. */
   body {
     color: oklch(20% 0 0);
     background:
-      radial-gradient(at 0% 0%, oklch(96% 0.01 250) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, oklch(97% 0.01 60) 0px, transparent 50%),
+      radial-gradient(ellipse at 0% 0%, oklch(94% 0.04 250) 0px, transparent 60%),
+      radial-gradient(ellipse at 100% 0%, oklch(94% 0.05 30) 0px, transparent 60%),
+      radial-gradient(ellipse at 50% 100%, oklch(94% 0.04 280) 0px, transparent 65%),
       oklch(99% 0 0);
     background-attachment: fixed;
   }
 }
 
 @layer components {
-  /* Standard glass surface — chrome / modals / CTAs. */
+  /* Standard glass surface — chrome (topbar) / modals / CTAs.
+   * Composition (back to front, painted top to bottom):
+   *   1. backdrop-filter blurs + saturates content behind.
+   *   2. Translucent base layer tints the result toward white.
+   *   3. Top-edge specular sheen as a linear-gradient on top adds depth.
+   *   4. Two-tone inset rim shadows fake directional lighting.
+   *   5. Outer multi-layer ambient shadow grounds the panel above the page. */
   .glass {
-    background: var(--glass-bg);
+    background:
+      linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.12) 0%,
+        rgb(255 255 255 / 0) 30%
+      ),
+      var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
     border-radius: var(--glass-radius);
     box-shadow:
       inset 0 1px 0 var(--glass-rim-top),
+      inset 0 -1px 0 var(--glass-rim-bottom),
       inset 0 0 0 1px var(--glass-rim-hairline),
       0 1px 2px var(--glass-shadow-near),
-      0 12px 32px -8px var(--glass-shadow-far);
+      0 8px 24px -4px var(--glass-shadow-mid),
+      0 24px 56px -12px var(--glass-shadow-far);
     isolation: isolate;
   }
 
+  /* "Strong" glass — used for modal-scale surfaces (welcome cards, dialogs).
+   * Higher blur and saturation make the lensing effect more pronounced
+   * because the panel is larger and the eye spends longer on it. */
   .glass-strong {
-    background: var(--glass-bg-strong);
-    backdrop-filter: blur(28px) saturate(180%);
-    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    background:
+      linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.16) 0%,
+        rgb(255 255 255 / 0) 35%
+      ),
+      var(--glass-bg-strong);
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
     border-radius: var(--glass-radius);
     box-shadow:
       inset 0 1px 0 var(--glass-rim-top),
+      inset 0 -1px 0 var(--glass-rim-bottom),
       inset 0 0 0 1px var(--glass-rim-hairline),
-      0 4px 12px var(--glass-shadow-near),
-      0 24px 64px -12px var(--glass-shadow-far);
+      0 4px 16px -2px var(--glass-shadow-mid),
+      0 32px 80px -16px var(--glass-shadow-far);
     isolation: isolate;
   }
 
