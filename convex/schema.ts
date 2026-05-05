@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { replySettingsValidator } from "./lib/replySettings";
 
 export default defineSchema({
   users: defineTable({
@@ -29,23 +30,7 @@ export default defineSchema({
     websiteUrl: v.optional(v.string()),
     keywords: v.array(v.string()),
     subredditSlugs: v.array(v.string()),
-    replySettings: v.object({
-      tone: v.union(v.literal("casual"), v.literal("professional"), v.literal("friendly")),
-      length: v.union(v.literal("short"), v.literal("medium"), v.literal("long")),
-      style: v.union(
-        v.literal("value-first"),
-        v.literal("value-mention"),
-        v.literal("direct-offer")
-      ),
-      includeCTA: v.boolean(),
-      personalize: v.boolean(),
-      includePhrases: v.optional(v.string()),
-      replyDialect: v.union(
-        v.literal("es-neutral"),
-        v.literal("es-ES"),
-        v.literal("es-LATAM")
-      ),
-    }),
+    replySettings: replySettingsValidator,
     status: v.union(v.literal("active"), v.literal("paused"), v.literal("archived")),
     lastPolledAt: v.optional(v.number()),
     createdAt: v.number(),

@@ -1,16 +1,9 @@
+import { type ReplySettings } from "./replySettings";
 import { withRetry } from "./retry";
 
-const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
+export type { ReplySettings };
 
-export interface ReplySettings {
-  tone: "casual" | "professional" | "friendly";
-  length: "short" | "medium" | "long";
-  style: "value-first" | "value-mention" | "direct-offer";
-  includeCTA: boolean;
-  personalize: boolean;
-  includePhrases?: string;
-  replyDialect: "es-neutral" | "es-ES" | "es-LATAM";
-}
+const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export async function generateReplyDraft(
   postTitle: string,

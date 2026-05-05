@@ -2,16 +2,9 @@
 
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
+import { type ReplySettings } from "@/convex/lib/replySettings";
 
-export interface ReplySettings {
-  tone: "casual" | "professional" | "friendly";
-  length: "short" | "medium" | "long";
-  style: "value-first" | "value-mention" | "direct-offer";
-  includeCTA: boolean;
-  personalize: boolean;
-  includePhrases?: string;
-  replyDialect: "es-neutral" | "es-ES" | "es-LATAM";
-}
+export type { ReplySettings };
 
 interface ReplySettingsFormProps {
   value: ReplySettings;

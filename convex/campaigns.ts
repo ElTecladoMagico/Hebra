@@ -6,6 +6,7 @@ import {
   isCampaignCapReached,
   validateCampaignInput,
 } from "./lib/campaignValidation";
+import { replySettingsValidator } from "./lib/replySettings";
 
 export const pauseAllActive = internalMutation({
   args: {},
@@ -87,19 +88,7 @@ export const createCampaign = mutation({
     websiteUrl: v.optional(v.string()),
     keywords: v.array(v.string()),
     subredditSlugs: v.array(v.string()),
-    replySettings: v.object({
-      tone: v.union(v.literal("casual"), v.literal("professional"), v.literal("friendly")),
-      length: v.union(v.literal("short"), v.literal("medium"), v.literal("long")),
-      style: v.union(
-        v.literal("value-first"),
-        v.literal("value-mention"),
-        v.literal("direct-offer"),
-      ),
-      includeCTA: v.boolean(),
-      personalize: v.boolean(),
-      includePhrases: v.optional(v.string()),
-      replyDialect: v.union(v.literal("es-neutral"), v.literal("es-ES"), v.literal("es-LATAM")),
-    }),
+    replySettings: replySettingsValidator,
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
