@@ -161,8 +161,9 @@ export function ReplySettingsForm({ value, onChange }: ReplySettingsFormProps) {
           onChange={(v) => set("style", v)}
         />
         {value.style === "direct-offer" && (
+          // biome-ignore lint/a11y/useSemanticElements: <output> is form-result semantics; this is an informational warning.
           <p
-            role="alert"
+            role="status"
             className="mt-1 rounded-lg bg-tier-hot-bg px-3 py-2 text-xs text-tier-hot ring-1 ring-tier-hot/25"
           >
             ⚠️ Esta opción tiene mayor riesgo de downvotes/spam reports en Reddit. Úsala solo si el
