@@ -16,11 +16,18 @@ import { useEffect } from "react";
  *    - has campaigns    → /feed (Bandeja de Señales)
  */
 export default function DashboardPage() {
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const storeUser = useMutation(api.users.store);
   const router = useRouter();
-  const user = useQuery(api.users.current);
-  const campaigns = useQuery(api.campaigns.listMine);
+  // Gate queries on auth — without this, useQuery fires before the Convex
+  // client finalizes the JWT and returns undefined permanently until a
+  // manual reload. The "skip" sentinel is the canonical Convex pattern.
+  // See: https://docs.convex.dev/client/react#skipping-an-argument
+  const user = useQuery(api.users.current, isAuthenticated ? {} : "skip");
+  const campaigns = useQuery(
+    api.campaigns.listMine,
+    isAuthenticated ? {} : "skip",
+  );
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -30,15 +37,20 @@ export default function DashboardPage() {
   }, [isAuthenticated, storeUser]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     // Wait for both queries to resolve before deciding where to send the user.
-    if (user === null || user === undefined) return;
-    if (campaigns === undefined) return;
+    if (user === undefined || campaigns === undefined) return;
+    // user === null means storeUser hasn't landed yet — wait for the
+    // reactive update from useQuery to advance.
+    if (user === null) return;
     if (campaigns.length === 0) {
       router.replace("/onboarding");
     } else {
       router.replace("/feed");
     }
-  }, [user, campaigns, router]);
+  }, [isAuthenticated, user, campaigns, router]);
 
+  // Distinguish auth-still-validating from data-still-loading for clarity.
+  if (isLoading) return <p className="text-sm text-zinc-500">Conectando…</p>;
   return <p className="text-sm text-zinc-500">Cargando…</p>;
 }
