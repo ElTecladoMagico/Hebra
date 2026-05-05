@@ -75,7 +75,9 @@ export const feedByUser = query({
           .withIndex("by_user_tier", (q2) => q2.eq("userId", userId))
           .collect();
 
-    return sortLeadsForFeed(leads);
+    // Hide archived from the feed. A future "Archive" view would invoke a
+    // separate query (or accept an `includeArchived` arg) — out of scope here.
+    return sortLeadsForFeed(leads.filter((l) => !l.archived));
   },
 });
 
