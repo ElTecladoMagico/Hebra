@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
-import { type ReplySettings } from "@/convex/lib/replySettings";
+import type { ReplySettings } from "@/convex/lib/replySettings";
 
 export type { ReplySettings };
 

@@ -1,9 +1,9 @@
 "use node";
 
 import { v } from "convex/values";
-import { internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
-import { searchSubreddit } from "../lib/reddit";
+import { internalAction } from "../_generated/server";
+import { type FetchedPost, searchSubreddit } from "../lib/reddit";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
@@ -19,11 +19,9 @@ export const tick = internalAction({
       staleBefore: Date.now() - ONE_HOUR_MS,
     });
     for (const campaign of stale) {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.crons.pollReddit.processCampaign,
-        { campaignId: campaign._id },
-      );
+      await ctx.scheduler.runAfter(0, internal.crons.pollReddit.processCampaign, {
+        campaignId: campaign._id,
+      });
     }
   },
 });
@@ -44,15 +42,23 @@ export const processCampaign = internalAction({
 
     for (const subreddit of campaign.subredditSlugs) {
       for (const keyword of campaign.keywords) {
-        let posts;
+        let posts: FetchedPost[];
         try {
           posts = await searchSubreddit(subreddit, keyword);
-        } catch (err: any) {
+        } catch (err) {
+          // Reddit threw; log + skip this (subreddit, keyword) pair.
+          // searchSubreddit raises plain Error with optional .status — narrow
+          // through Error then read .status off the augmented shape.
+          const message = err instanceof Error ? err.message : "unknown";
+          const status =
+            err instanceof Error && "status" in err
+              ? String((err as Error & { status?: number }).status ?? "")
+              : "";
           await ctx.runMutation(internal.errorLog.insert, {
             service: "reddit",
             operation: "search",
-            errorMessage: err?.message ?? "unknown",
-            errorCode: String(err?.status ?? ""),
+            errorMessage: message,
+            errorCode: status,
             severity: "warn",
             context: { campaignId: args.campaignId, subreddit, keyword },
           });
@@ -63,16 +69,12 @@ export const processCampaign = internalAction({
           posts,
         });
         for (const postId of newIds) {
-          await ctx.scheduler.runAfter(
-            0,
-            internal.actions.scoreLead.scoreLead,
-            {
-              postId,
-              campaignId: args.campaignId,
-              userId: campaign.userId,
-              matchedKeyword: keyword,
-            },
-          );
+          await ctx.scheduler.runAfter(0, internal.actions.scoreLead.scoreLead, {
+            postId,
+            campaignId: args.campaignId,
+            userId: campaign.userId,
+            matchedKeyword: keyword,
+          });
         }
       }
     }
