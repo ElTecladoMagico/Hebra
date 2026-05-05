@@ -1,10 +1,6 @@
 import { v } from "convex/values";
-import {
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { loadOwnedLead, requireOwnedReply } from "./lib/auth";
 
 export const insertInternal = internalMutation({
   args: {
@@ -25,13 +21,17 @@ export const insertInternal = internalMutation({
   },
 });
 
-// TODO: ownership check — does not verify the lead belongs to the caller.
-// Plan-level decision: match the plan snippet for now and tighten later.
+/**
+ * Latest reply for the given lead, or `null` when the lead is missing,
+ * not owned by the caller, or the caller is unauthenticated. Ownership
+ * is verified through the lead first so callers can't probe replies for
+ * leads they don't own.
+ */
 export const getByLead = query({
   args: { leadId: v.id("leads") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
+    const owned = await loadOwnedLead(ctx, args.leadId);
+    if (!owned) return null;
     return await ctx.db
       .query("replies")
       .withIndex("by_lead", (q) => q.eq("leadId", args.leadId))
@@ -40,13 +40,14 @@ export const getByLead = query({
   },
 });
 
-// TODO: ownership check — any authenticated user can patch any reply.
-// Plan-level decision: match the plan snippet for now and tighten later.
+/**
+ * Mark a reply as copied. Throws when unauthenticated, when the reply
+ * doesn't exist, or when the reply isn't owned by the caller.
+ */
 export const markCopied = mutation({
   args: { replyId: v.id("replies") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthenticated");
+    await requireOwnedReply(ctx, args.replyId);
     await ctx.db.patch(args.replyId, {
       status: "copied",
       copiedAt: Date.now(),
@@ -54,13 +55,14 @@ export const markCopied = mutation({
   },
 });
 
-// TODO: ownership check — any authenticated user can patch any reply.
-// Plan-level decision: match the plan snippet for now and tighten later.
+/**
+ * Mark a reply as dismissed. Throws when unauthenticated, when the reply
+ * doesn't exist, or when the reply isn't owned by the caller.
+ */
 export const dismiss = mutation({
   args: { replyId: v.id("replies") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthenticated");
+    await requireOwnedReply(ctx, args.replyId);
     await ctx.db.patch(args.replyId, { status: "dismissed" });
   },
 });

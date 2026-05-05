@@ -1,10 +1,6 @@
 import { v } from "convex/values";
-import {
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { getCurrentUser, loadOwnedLead, requireOwnedLead } from "./lib/auth";
 import { sortLeadsForFeed } from "./lib/leadOrdering";
 
 export const getInternal = internalQuery({
@@ -26,9 +22,7 @@ export const insert = internalMutation({
     // Dedupe: don't insert if (postId, userId) pair already exists.
     const existing = await ctx.db
       .query("leads")
-      .withIndex("by_post_user", (q) =>
-        q.eq("postId", args.postId).eq("userId", args.userId),
-      )
+      .withIndex("by_post_user", (q) => q.eq("postId", args.postId).eq("userId", args.userId))
       .unique();
     if (existing) return existing._id;
     return await ctx.db.insert("leads", {
@@ -44,31 +38,22 @@ export const insert = internalMutation({
  * Get the current user's leads, optionally filtered by tier.
  * Sorted by tier (hot, warm, cold) then `scoredAt` descending — hottest first.
  *
- * Auth-gated via `ctx.auth.getUserIdentity()`; returns `[]` when unauthenticated
+ * Auth-gated via `getCurrentUser`; returns `[]` when unauthenticated
  * or when the identity has no matching user row.
  */
 export const feedByUser = query({
   args: {
-    tierFilter: v.optional(
-      v.union(v.literal("hot"), v.literal("warm"), v.literal("cold")),
-    ),
+    tierFilter: v.optional(v.union(v.literal("hot"), v.literal("warm"), v.literal("cold"))),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkUserId", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
     if (!user) return [];
 
     const userId = user._id;
     const leads = args.tierFilter
       ? await ctx.db
           .query("leads")
-          .withIndex("by_user_tier", (q2) =>
-            q2.eq("userId", userId).eq("tier", args.tierFilter!),
-          )
+          .withIndex("by_user_tier", (q2) => q2.eq("userId", userId).eq("tier", args.tierFilter!))
           .collect()
       : await ctx.db
           .query("leads")
@@ -88,17 +73,10 @@ export const feedByUser = query({
 export const getById = query({
   args: { leadId: v.id("leads") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-    const lead = await ctx.db.get(args.leadId);
-    if (!lead) return null;
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkUserId", identity.subject))
-      .unique();
-    if (!user || lead.userId !== user._id) return null;
-    const post = await ctx.db.get(lead.postId);
-    return { ...lead, post };
+    const owned = await loadOwnedLead(ctx, args.leadId);
+    if (!owned) return null;
+    const post = await ctx.db.get(owned.lead.postId);
+    return { ...owned.lead, post };
   },
 });
 
@@ -109,17 +87,7 @@ export const getById = query({
 export const markRead = mutation({
   args: { leadId: v.id("leads") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthenticated");
-    const lead = await ctx.db.get(args.leadId);
-    if (!lead) return;
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkUserId", identity.subject))
-      .unique();
-    if (!user || lead.userId !== user._id) {
-      throw new Error("Not authorized for this lead");
-    }
+    const { lead } = await requireOwnedLead(ctx, args.leadId);
     if (!lead.read) await ctx.db.patch(args.leadId, { read: true });
   },
 });
@@ -131,17 +99,7 @@ export const markRead = mutation({
 export const setArchived = mutation({
   args: { leadId: v.id("leads"), archived: v.boolean() },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthenticated");
-    const lead = await ctx.db.get(args.leadId);
-    if (!lead) return;
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkUserId", identity.subject))
-      .unique();
-    if (!user || lead.userId !== user._id) {
-      throw new Error("Not authorized for this lead");
-    }
+    await requireOwnedLead(ctx, args.leadId);
     await ctx.db.patch(args.leadId, { archived: args.archived });
   },
 });

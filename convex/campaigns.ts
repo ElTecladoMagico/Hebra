@@ -1,10 +1,6 @@
 import { v } from "convex/values";
-import {
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { getCurrentUser, requireUser } from "./lib/auth";
 import {
   campaignCapForTier,
   isCampaignCapReached,
@@ -67,12 +63,7 @@ export const markPolled = internalMutation({
 export const listMine = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkUserId", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
     if (!user) return [];
     const campaigns = await ctx.db
       .query("campaigns")
@@ -97,16 +88,8 @@ export const createCampaign = mutation({
     keywords: v.array(v.string()),
     subredditSlugs: v.array(v.string()),
     replySettings: v.object({
-      tone: v.union(
-        v.literal("casual"),
-        v.literal("professional"),
-        v.literal("friendly"),
-      ),
-      length: v.union(
-        v.literal("short"),
-        v.literal("medium"),
-        v.literal("long"),
-      ),
+      tone: v.union(v.literal("casual"), v.literal("professional"), v.literal("friendly")),
+      length: v.union(v.literal("short"), v.literal("medium"), v.literal("long")),
       style: v.union(
         v.literal("value-first"),
         v.literal("value-mention"),
@@ -115,21 +98,11 @@ export const createCampaign = mutation({
       includeCTA: v.boolean(),
       personalize: v.boolean(),
       includePhrases: v.optional(v.string()),
-      replyDialect: v.union(
-        v.literal("es-neutral"),
-        v.literal("es-ES"),
-        v.literal("es-LATAM"),
-      ),
+      replyDialect: v.union(v.literal("es-neutral"), v.literal("es-ES"), v.literal("es-LATAM")),
     }),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkUserId", identity.subject))
-      .unique();
-    if (!user) throw new Error("User not found");
+    const user = await requireUser(ctx);
 
     validateCampaignInput({
       offering: args.offering,
@@ -143,9 +116,7 @@ export const createCampaign = mutation({
       .collect();
     if (isCampaignCapReached(existing, user.tier)) {
       const cap = campaignCapForTier(user.tier);
-      throw new Error(
-        `Plan ${user.tier} permite máximo ${cap} campañas activas`,
-      );
+      throw new Error(`Plan ${user.tier} permite máximo ${cap} campañas activas`);
     }
 
     return await ctx.db.insert("campaigns", {
@@ -170,22 +141,13 @@ export const createCampaign = mutation({
 export const setStatus = mutation({
   args: {
     campaignId: v.id("campaigns"),
-    status: v.union(
-      v.literal("active"),
-      v.literal("paused"),
-      v.literal("archived"),
-    ),
+    status: v.union(v.literal("active"), v.literal("paused"), v.literal("archived")),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthenticated");
+    const user = await requireUser(ctx);
     const campaign = await ctx.db.get(args.campaignId);
     if (!campaign) return;
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkUserId", identity.subject))
-      .unique();
-    if (!user || campaign.userId !== user._id) {
+    if (campaign.userId !== user._id) {
       throw new Error("Not authorized");
     }
     await ctx.db.patch(args.campaignId, { status: args.status });
